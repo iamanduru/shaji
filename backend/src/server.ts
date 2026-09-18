@@ -1,3 +1,7 @@
-const applicationName: string = "Shaji";
+import app from "./app.js";
 
-console.log(`${applicationName} backend starting...`);
+const PORT = 3000;
+
+app.listen(PORT, () => {
+  console.log(`Shaji backend running on http://localhost:${PORT}`);
+});
