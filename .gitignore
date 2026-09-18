@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+
+# Environment variables / secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# Allow safe example environment files
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+logs/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime files
+*.pid
+*.pid.lock
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor files
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Prisma / local database files
+*.db
+*.db-journal
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Security / certificates / keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Local secrets
+secrets/
