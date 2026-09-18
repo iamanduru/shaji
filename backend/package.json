@@ -1,0 +1,21 @@
+{
+  "name": "shaji-backend",
+  "version": "1.0.0",
+  "description": "Backend API for the Shaji identity and access management system",
+  "main": "dist/server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "authentication",
+    "security",
+    "iam",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "Anduru",
+  "license": "MIT"
+}
