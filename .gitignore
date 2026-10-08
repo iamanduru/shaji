@@ -8,6 +8,7 @@ node_modules/
 .env.test
 .env.production
 .env.*.local
+.env.migration
 
 # Allow safe example environment files
 !.env.example
