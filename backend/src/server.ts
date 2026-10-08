@@ -81,8 +81,12 @@ async function shutdown(
 
     logger.info("Database connection closed");
 
+    clearTimeout(forceShutdownTimer);
+
     process.exit(exitCode);
   } catch (error) {
+    clearTimeout(forceShutdownTimer);
+
     logger.error(
       { err: error },
       "Error during graceful shutdown"
