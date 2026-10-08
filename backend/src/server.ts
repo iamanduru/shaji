@@ -1,17 +1,48 @@
+import type { Server } from "node:http";
+
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { prisma } from "./lib/prisma.js";
 
-const server = app.listen(env.PORT, () => {
-  logger.info(
-    { port: env.PORT },
-    "Shaji backend started"
-  );
-});
-
+let server: Server | undefined;
 let isShuttingDown = false;
 
-function shutdown(reason: string, exitCode = 0): void {
+async function start(): Promise<void> {
+  try {
+    await prisma.$connect();
+
+    // Force an actual database round trip.
+    // PrismaPg may initialise a pool without immediately opening
+    // a PostgreSQL connection, so SELECT 1 acts as our readiness check.
+    await prisma.$queryRaw`SELECT 1`;
+
+    logger.info("Database connection established");
+
+    server = app.listen(env.PORT, () => {
+      logger.info(
+        { port: env.PORT },
+        "Shaji backend started"
+      );
+    });
+  } catch (error) {
+    logger.fatal(
+      { err: error },
+      "Failed to start Shaji backend"
+    );
+
+    await prisma
+      .$disconnect()
+      .catch(() => undefined);
+
+    process.exit(1);
+  }
+}
+
+async function shutdown(
+  reason: string,
+  exitCode = 0
+): Promise<void> {
   if (isShuttingDown) {
     return;
   }
@@ -23,34 +54,54 @@ function shutdown(reason: string, exitCode = 0): void {
     "Graceful shutdown started"
   );
 
-  server.close((error) => {
-    if (error) {
-      logger.error(
-        { err: error },
-        "Failed to close HTTP server"
-      );
+  const forceShutdownTimer = setTimeout(() => {
+    logger.error("Graceful shutdown timed out");
+    process.exit(1);
+  }, 10_000);
 
-      process.exit(1);
+  forceShutdownTimer.unref();
+
+  try {
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server?.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      });
+
+      logger.info("HTTP server closed");
     }
 
-    logger.info("HTTP server closed");
+    await prisma.$disconnect();
+
+    logger.info("Database connection closed");
+
+    clearTimeout(forceShutdownTimer);
 
     process.exit(exitCode);
-  });
+  } catch (error) {
+    clearTimeout(forceShutdownTimer);
 
-  setTimeout(() => {
-    logger.error("Graceful shutdown timed out");
+    logger.error(
+      { err: error },
+      "Error during graceful shutdown"
+    );
 
     process.exit(1);
-  }, 10_000).unref();
+  }
 }
 
 process.once("SIGINT", () => {
-  shutdown("SIGINT");
+  void shutdown("SIGINT");
 });
 
 process.once("SIGTERM", () => {
-  shutdown("SIGTERM");
+  void shutdown("SIGTERM");
 });
 
 process.once("uncaughtException", (error) => {
@@ -59,7 +110,7 @@ process.once("uncaughtException", (error) => {
     "Uncaught exception"
   );
 
-  shutdown("uncaughtException", 1);
+  void shutdown("uncaughtException", 1);
 });
 
 process.once("unhandledRejection", (reason) => {
@@ -68,5 +119,7 @@ process.once("unhandledRejection", (reason) => {
     "Unhandled promise rejection"
   );
 
-  shutdown("unhandledRejection", 1);
+  void shutdown("unhandledRejection", 1);
 });
+
+void start();
